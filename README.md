@@ -294,16 +294,280 @@ Command Line ==> System properties ==> application.properties ==> application_pr
 
 =====================================================================
 
+
+
+
 RESTful and integrate with JPA Hibernate 
 
 2:00 Post Lunch
 ======================================================
 
+ORM ==> Object Relational Mappping
+
+class <---> relational database table
+Mapping in the form of XML or annotation
+ORM performs DDL and DML operations
+
+class mapped to table @Table
+fields mapped to columns using @Column
+
+ORM Frameworks ==> Hibernate, OpenJPA, EclipseLink, KODO, TopLink
+JPA ==> Specification for ORM
+
+Application ==> JPA ==> ORM ---> JDBC integration API ---> Database
+---------------------------
+
+ORM ==> 
+	1) DataSource
+		pool of database connection
+	2) EntityManager
+		wrapper for database connection
+	3) EntityManagerFactory
+	4) PeristenceContext
+		environment where entities are managed
+
+
+	@Configuration
+	public class AppConfig {
+
+		@Bean
+		public DataSource ds() {
+			.setDriverClassName(..)
+			.setUrl(...)
+			.setUserName(...)
+		}
+
+		@Bean
+		public EntityManagerFactoryBean getEmf() {
+			LocalContainerEntityManagerFactoryBean emf = ..
+
+			emf.setJPAVendor(new HibernateJPAVendor());
+			emf.setPackagesToScan("com.adobe.prj.entity");
+			emf.setDataSource(ds());
+		}
+
+
+	}
+
+	@Repository
+	public class ProductDaoJpaImpl implements ProductDao {
+
+		@PersistenceContext 
+		EntityManager em;
+
+
+		void save(Product p) {
+			em.save(p);
+		}
+
+	}
+====================================================================================
+
+spring data jpa
+	simplifies using ORM
+
+	public interface EmployeeDao extends JpaRepository<Employee, String> {
+		CRUD
+	}
+
+	Spring Data JPA creates implmentation @Repository class for the interface
+===================================================================================
 
 
 
 
+@SequenceGenerator(name = "mySeqGen", sequenceName = "mySeq", initialValue = 5, allocationSize = 100)
+
+
+@GeneratedValue(strategy = GenerationType.AUTO)
+
+select max(id) + 1
+
+FETCH TYPE ==> LAZY 
+n + 1 hits to the DB:
+
+select * from orders; [ 1, 2, 3, 4]
+
+select * from lineitems where order_fk = ?
+
+
+If connection is lost we can't get child elements
+Can't create MAster - child UI
+
+EAGER:
+use join and get order and items with 1 hit to the DB
+==============================
+
+DDL 
+1) 
+spring.jpa.hibernate.ddl-auto=update
+
+1) map classes with existing tables
+2) if tables are not present create table using mapping done xml / annoation
+3) if required alter existing table
+
+2)
+spring.jpa.hibernate.ddl-auto=create
+
+drop table and re-create for every of application
+good for testing
+
+3)
+spring.jpa.hibernate.ddl-auto=validate
+
+map class to existing table;
+won't create tables
+=======================================
+ 
+ @SpringBootApplication
+ 	@EnableTransactionManagment
+
+ Spring provides PlatformTransactionManager abstraction over varous transactions like JDBCTx, JPATransaction , JTATraantions
+
+
+ 	PlatformTransactionManager ==> Declaritive and Distrubuted [ 2 phase commit protocol]
+
+ 	JDBC:
+ 	public void transferFunds(Account first, Account two, double amt) {
+ 		Connection con = ...
+
+ 		try{
+ 			con.setAutoCommit(false);
+
+ 			...
+
+ 			con.commit();
+ 		} catch(SQLException ex) {
+ 			con.rollback();
+ 	}
+ 	}
+
+ 	Hibernate:
+
+ 	public void transferFunds(Account first, Account two, double amt) {
+ 		Session ses = SessionFactory.getSession();
+
+ 		try{
+ 			Transaction tx = ses.beginTransaction();
+
+ 			...
+
+ 			tx.commit();
+ 		} catch(SQLException ex) {
+ 			tx.rollback();
+ 	}
+ 	}
+===============
+
+with PlatformTransactionManager and @EnableTransactionManagment
+	
+	Atomic unit
+
+	@Transactional
+	public void transferFunds(Account first, Account two, double amt) {
+ 			update first
+ 			update second
+ 			insert into sometransaction table
+ 	}
+
+Internally @Transactional is an Around Advice [ AOP ]
 
 
 
+	@Transactional(rollbackFor=InsufficientBalanceException.class, noRollBackFor=IndexOutOfBoundsException.class)
+	public void transferFunds(Account first, Account two, double amt) {
+ 			update first
+ 			update second
+ 			insert into sometransaction table
+ 	}
 
+
+ 	Optiona<Product> prd =  productDao.findById(id);
+
+ 		return prd.elseIf(new Product())
+=========
+
+PESSIMISTIC LOCK
+@Transactional(isolation = Isolation.SERIALIZABLE )
+
+
+
+@Table(name="customers")
+@Entity
+public class Customer {
+		...
+
+		@Version
+		private int ver;
+
+
+ver column in database
+11
+
+	update customer set first_name = 'a', ver = ver + 1 where email='a@adobe.com' and ver = 10;
+	
+First Commit wins
+Default: last commit wins
+=================================================
+
+
+@Table(name="products")
+@Entity
+public class Product {
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY) // AUTO INCREMENT
+	private int id;
+	
+	private String name;
+	
+	private double price;
+	 
+	@Column(name="qty")
+	private int quantity;
+
+class ProductDTO {
+	name
+	price
+}
+
+interface IProductDTO {
+	String getName();
+	double getPrice();
+}
+
+public interface ProductDao extends JpaRepository<Product, Integer> {
+	List<Product> findByName(String name);
+
+	List<Product> findByPriceAndQuantity(int price, int qty); // select * from products where price = ? and qty = ?
+	List<Product> findByPriceOrQuantity(int price, int qty); // select * from products where price = ? or qty = ?
+
+	// JPQL uses class and fields instead of table and columns
+	@Query("select name, price from Product")
+	List<Object[]> getNameAndPrice();
+
+	@Query("select new pkg.ProductDTO(name, price) from Product")
+	List<ProductDTO> getNameAndPrice();
+
+	@Query("select  name, price  from Product")
+	List<IProductDTO> getNameAndPrice();
+}
+
+public class ReportDTO {
+	...
+}
+
+public interface OrderDao extends JpaRepository<Order, Integer> {
+	
+	@Query("select o.orderDate, c.firstName, c.email from Order o inner join customer c")
+	List<ReportDTO> getReport();
+}
+===========================================================
+
+NativeQuery
+
+@Query("select name, price from products", nativeQuery=true)
+List<Object[]> getNameAndPrice();
+===================================================
+
+http://localhost:8080/h2console
