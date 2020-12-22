@@ -652,5 +652,485 @@ public interface CompanyDao extends JpaRepository<Company, Long> {
 6) RESTful 
 7) Envers
 8) Flux
+docker pull redis
+ 
+## step2 - Running the container
+docker run -d -p 6379:6379 --name my-redis redis
+
+
+UI with NodeJS for Redis:
+$ npm install -g redis-commander
+$ redis-commander
+
 9) cacheExample
+Caching implementation using Redis:
+<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+<dependency>
+	<groupId>org.apache.commons</groupId>
+	<artifactId>commons-pool2</artifactId>
+</dependency>
+
+application.properties:
+spring.redis.database=0
+spring.redis.port=6379
+spring.redis.host=127.0.0.1
+spring.redis.lettuce.pool.min-idle=5
+spring.redis.lettuce.pool.max-idle=10
+spring.redis.lettuce.pool.max-active=8
+spring.redis.lettuce.pool.max-wait=1ms
+spring.redis.lettuce.shutdown-timeout=100ms
+
+
+@CacheConfig(cacheNames = "books")
+public class SimpleBookRepository implements BookRepository {
+	static List<Book> books = Arrays.asList(new Book("isbn-1234", "First Book"), new Book("isbn-4567", "Second Book"), new Book("isbn-4567", "Second Book") );
+	
+	@Override
+	@Cacheable( key="#isbn") // books::isbn-1234: returned book will be value
+
+
+==========
+
+redis> keys *
+redis> get books::isbn-4567
 ===================================================
+
+Day 2
+=====
+	Spring annotaions at class level for lifec cycle management
+	@Autowired; @Bean
+	@PersistenceContext ==> Spring Data JPA
+
+
+	--spring.config.location=file://./users/sample.properties 
+
+	findBy
+
+	@Query
+
+	CRUD operations available in JpaRepository
+==============================================================
+
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.adobe.prj.entity.Customer;
+
+public interface CustomerDao extends JpaRepository<Customer, String> {
+	 
+	 @Modifying
+	 @Query("update Customer set firstName = :fn where email = :em")
+	 int updateCustomer(@Param("fn") String firstName, @Param("em") String email);
+}	
+
+"from Product"
+
+"select p from Product p"
+========
+
+scalar values : "select name,price from Product"
+
+Polymorphic:
+
+"from Object"
+ 
+"from Product"; ==> product.java ==> "products";  Mobile extends Product ==> "mobiles"; Tv extends Product ==> "tv"
+=========================================================
+ JpaRepository<Product, Integer> extends  PagingAndSortingRepository<T, ID>
+ Page<T> findAll(Pageable pageable);
+
+
+ 	@Autowired
+ 	ProductDao productDao;
+
+ 	// Pagination with Spring DATA JPA
+ 	PageRequest pageable = PageRequest.of(0, 10);
+
+ 	Page<Product> productPage = productDao.findAll(pageable);
+
+ 	productPage.getPage(); 	
+ 	productPage.getTotalPage();
+
+ 	List<Product> products  = productPage.getContent(); 
+
+ 	====================
+
+ 		// Pagination with Spring DATA JPA
+ 	PageRequest pageable = PageRequest.of(0, 10, Sort.by("price").ascending());
+ 	Page<Product> productPage = productDao.findAll(pageable);
+====================================
+Entity Graph:
+File --> import --> existing maven projects 
+
+Default behaviour of ORM is
+	ManyToOne --> EAGER fetching
+	OneToMany --> Lazy fetching
+
+=========
+
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@JoinColumn(name="order_fk")
+	private List<Item> items = new ArrayList<>();
+====================
+
+public class Company {
+	 
+	    @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
+	    private Set<Department> departments = new HashSet<>();
+
+	    @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
+	    private Set<Car> cars = new HashSet<>();
+
+@Entity
+public class Department {
+	 
+
+	    @OneToMany(mappedBy = "department", fetch = FetchType.EAGER)
+	    private Set<Employee> employees = new HashSet<>();
+
+	    @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
+	    private Set<Office> offices = new HashSet<>();
+
+
+@Entity
+public class Employee {
+	 
+	    @OneToOne(fetch = FetchType.EAGER)
+	    @JoinColumn(name = "address_id")
+	    private Address address;
+
+
+
+	    findById(Company.class, 1);
+	    	Company + Department + Cars + Employees + Offices + Address
+===============
+ select
+        company0_.id as id1_2_0_,
+        company0_.name as name2_2_0_,
+        department1_.company
+        _id as company_3_3_1_,
+        department1_.id as id1_3_1_,
+        department1_.id as id1_3_2_,
+        department1_.company_id as company_3_3_2_,
+        department1_.name as name2_3_2_ 
+    from
+        company company0_ 
+    left outer join
+        department department1_ 
+            on company0_.id=department1_.company_id 
+    where
+        company0_.id=?
+
+    @NamedEntityGraph(name = "companyWithDepartmentsGraph",
+                attributeNodes = {@NamedAttributeNode("departments")})
+=========
+   select
+        company0_.id as id1_2_0_,
+        company0_.name as name2_2_0_,
+        department1_.company_id as company_3_3_1_,
+        department1_.id as id1_3_1_,
+        department1_.id as id1_3_2_,
+        department1_.company_id as company_3_3_2_,
+        department1_.name as name2_3_2_,
+        employees2_.department_id as departme5_4_3_,
+        employees2_.id as id1_4_3_,
+        employees2_.id as id1_4_4_,
+        employees2_.address_id as address_4_4_4_,
+        employees2_.department_id as departme5_4_4_,
+        employees2_.name as name2_4_4_,
+        employees2_.surname as surname3_4_4_ 
+    from
+        company company0_ 
+    left outer join
+        department department1_ 
+            on company0_.id=department1_.company_id 
+    left outer join
+        employee employees2_ 
+            on department1_.id=employees2_.department_id 
+    where
+        company0_.id=?
+ @NamedEntityGraph(name = "companyWithDepartmentsAndEmployeesGraph",
+                attributeNodes = {
+                		@NamedAttributeNode(value = "departments", subgraph = "departmentsWithEmployees")},
+                subgraphs = @NamedSubgraph(
+                        name = "departmentsWithEmployees",
+                        attributeNodes = @NamedAttributeNode("employees")))
+=============
+
+	  @NamedEntityGraph(name = "companyWithDepartmentsAndEmployeesAndOfficesGraph",
+                attributeNodes = {@NamedAttributeNode(value = "departments", 
+                subgraph = "departmentsWithEmployeesAndOffices")},
+                subgraphs = @NamedSubgraph(
+                        name = "departmentsWithEmployeesAndOffices",
+                        attributeNodes = {@NamedAttributeNode("employees"), @NamedAttributeNode("offices")}))
+
+
+                 builder.equal(root.get("birthday"), today);
+===========================================
+
+After TEA Break RESTful Web Services
+===========
+
+install Postman
+====================
+
+CriteriaAPI ==> Programmatic way of forming queries [ without SQL or jpql]
+
+JPA ==> Specification and queries which accept Specication
+===========================================================================
+
+RESTful Web Services
+====================
+
+Representational State Transfer
+A resource on server [ database, files, printers] its representation can be served to various clients in various formats [xml, json, csv, ..]
+
+1) client-server
+2) uniform uri
+3) scalable
+4) cachable [ Swiggy ==> caching info ==> expires]
+5) stateless
+
+REST is based on HTTP
+==> URI are plural nouns ==> identify a resource [ customers, orders, products]
+==> HTTP VERBS for actions [ GET, POST, PUT, PATCH, DELETE ]
+
+1) 
+GET
+http://localhost:8080/api/products
+
+to fetch all products
+
+2) 
+GET
+http://localhost:8080/api/products/5
+
+get product by id ==> 5
+
+GET
+http://localhost:8080/api/customers/me@gmail.com/orders
+
+3) 
+GET
+http://localhost:8080/api/products?category=mobile
+http://localhost:8080/api/products?page=2&size=10
+
+use Request or Query Parameter for filtered data
+
+4)
+POST
+http://localhost:8080/api/products
+
+payload from the client contains product representation which needs to be added to "products"
+
+5)
+PUT
+http://localhost:8080/api/products/4
+
+payload from the client contains product representation which needs to be update product with id 4 
+in "products"
+
+6)
+DELETE
+http://localhost:8080/api/products/4
+
+
+CRUD ==> POST GET PUT/PATCH DELETE
+======================================
+
+HTTP Header:
+Accept: application/json
+sent by client to server asking for json represention
+
+content-type:text/xml
+payload sent by client to server is in XML format
+==================================================
+
+Spring Boot web module provides for RESTful Web services?
+	Dependency: spring-boot-starter-web
+	Embedded Tomcat server ==> 200 concurrent requests
+	DispatcherServlet; HandlerMapping
+
+	By default it enables handling JSON data
+	ContentNegotiationHandler Java <--> Represention
+	for JSON:
+		Jettison
+		Jackson [ default]
+		GSON
+		Moxy
+=====================================================
+
+	Traditional Web Application ==> application contains server + client logic [ presentation] ==>html
+	@Controller ==> View [ html / theamleaf / jsp]
+
+	Restful Web Services ==> Represention
+	@RestController
+
+	api/products
+
+	api/orders
+
+	payload is order:
+
+	{
+		"total": 80130.00,
+		"customer": {"email": "a@adobe.com"},
+		"items": [
+			{"product": {"id": 2}, "qty": 10, "amount": 130.00},
+			{"product": {"id": 1}, "qty": 1, "amount": 80000.00}
+		]
+	}
+
+	@NotBlank(message = "{name.required}")
+	private String name;
+
+	@Min(value=10, message="Price ${validatedValue} should be more than {value}")
+	private double price;
+	
+	
+	@Min(value = 0, message="Quantity ${validatedValue} should be more than {value}")
+	@Column(name="qty")
+	private int quantity;
+
+=======================
+
+RestController and Swagger API for RESTful documentation
+
+AOP ==> Aspect Oriented Programming
+Why?
+	to handle concerns which leads to code tangling and scattering
+
+ void transfer(Account fromAcc, Account toAcc, int amount, User user,
+    Logger logger, Database database) throws Exception {
+  logger.info("Transferring money...");
+  
+  if (!isUserAuthorised(user, fromAcc)) {
+    logger.info("User has no permission.");
+    throw new UnauthorisedUserException();
+  }
+  
+  if (fromAcc.getBalance() < amount) {
+    logger.info("Insufficient funds.");
+    throw new InsufficientFundsException();
+  }
+
+  fromAcc.withdraw(amount);
+  logger.info("wihdraw done")
+  toAcc.deposit(amount);
+  logger.info("deposit done")
+
+  database.commitChanges();  // Atomic operation.
+
+  logger.info("Transaction successful.");
+}
+
+AOP:
+	Aspect ==> A concern which can be used along with main logic, but its not main logic
+				==> Logging; Security; Profile; Transaction [ @Transactional ]
+
+	JoinPoint ==> Where an aspect can be weaved [ method or exceptions]
+
+	PointCut ==> selected joinpoint
+
+	Advice ==> Before; After; Around; AfterReturning; AfterThrowing
+
+	public @ResponseBody String updateProduct(@PathVariable("id") int id, @RequestBody Product p) {
+		service.updateProduct(id, p.getQuantity());
+		// After
+		return "product updated";
+	}
+
+	ByteCode Instrumentaiton libraries [asm] ==> CGLIB or JavaAssist generates Proxies 
+=========================================================
+
+
+	public void doTransaction(Class<?> clazz) {
+
+	}
+
+	@Around
+	public void doTransaction(Method<?> m) {
+		if(m.getAnnoation(Transaction.class) != null) {
+			try {
+				Transaction tx = ...
+				actual code
+				tx.commit();
+			} catch(Throwable ex) {
+				tx.rollback();
+			}
+		}
+	}
+=========================
+
+for UnitTesting:
+
+Commit all RestTemplate code
+===============================
+
+Unit Testing ==> Testing Controller classes
+============================================
+
+Controller ==> Service ==> DAO ==> Database Connection
+
+to Test Controller we need to mock Service
++++++++++++++++++++++++++++++++++++++++++++++
+
+Mockito; EasyMock; JMock ==> Mocking Framework
+===========================================
+ 
+Start Docker Desktop
+
+docker run -d --name=prometheus -p 9090:9090 -v C:\prometheus\prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus --config.file=/etc/prometheus/prometheus.yml
+
+
+docker run redis --name=myredis 
+=========================================
+
+Future and CompletableFuture
+
+Future's get(); blocking
+
+CompletableFuture callbacks
+
+cf.thenAsync(task).thenAsyc(task2).thenSyn(task3)
+========
+
+Thread pool by Jetty / Tomcat ==> 200 threads ==> to handle Request
+
+Another set of thread pool of size 3 [ Executor/ ExcectorService]
+
+	Service code ==> to make HTTP calls to another REST endpoint using these 3 threads form pool
+		employeeName; 
+		employeePhone; 
+		employeeAddress;
+
+	Controller which needs these 3 data:
+		CompletableFuture
+
+	Controller is still Synchnrouns
+===================
+	
+	BlockingQueue 
+1 client ==> 1 thread form tomcat
+
+Trip Aggregator MMT; HolidayIQ
+	Thread ==> Indigo; SpiceJET; Go;
+===========================================================
+
+Reactive Programming
+Cache Redis
+ProtoBuf [ Micro Service]
+Security
+
+
+
+
+
+
