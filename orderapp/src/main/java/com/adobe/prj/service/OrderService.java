@@ -68,4 +68,8 @@ public class OrderService {
 		return p;
 	}
 
+	public List<Customer> getCustomersByFirstName(String string) {
+		return customerDao.findByFirstName(string);
+	}
+
 }

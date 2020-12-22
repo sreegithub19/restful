@@ -571,3 +571,86 @@ List<Object[]> getNameAndPrice();
 ===================================================
 
 http://localhost:8080/h2console
+<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>2.7.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>2.7.0</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+==============================
+@NotBlank(message = "{name.required}")
+	private String name;
+
+	@Min(value=10, message="Price ${validatedValue} should be more than {value}")
+	private double price;
+	
+	
+	@Min(value = 0, message="Quantity ${validatedValue} should be more than {value}")
+	@Column(name="qty")
+	private int quantity;
+=================================================
+
+1) Pagination
+===============
+2) NamedQuery
+@NamedQueries({
+        @NamedQuery(name = "Company.companyWithDepartmentsNamedQuery",
+                query = "SELECT DISTINCT c " +
+                        "FROM Company c " +
+                        "LEFT JOIN FETCH c.departments " +
+                        "WHERE c.id = :id"),
+        @NamedQuery(name = "Company.companyWithDepartmentsAndEmployeesNamedQuery",
+                query = "SELECT DISTINCT c " +
+                        "FROM Company c " +
+                        "LEFT JOIN FETCH c.departments as d " +
+                        "LEFT JOIN FETCH d.employees " +
+                        "WHERE c.id = :id"),
+        @NamedQuery(name = "Company.companyWithDepartmentsAndEmployeesAndOfficesNamedQuery",
+                query = "SELECT DISTINCT c " +
+                        "FROM Company c " +
+                        "LEFT JOIN FETCH c.departments as d " +
+                        "LEFT JOIN FETCH d.employees " +
+                        "LEFT JOIN FETCH d.offices " +
+                        "WHERE c.id = :id"),
+        @NamedQuery(name = "Company.companyWithCarsNamedQuery",
+                query = "SELECT DISTINCT c " +
+                        "FROM Company c " +
+                        "LEFT JOIN FETCH c.cars " +
+                        "WHERE c.id = :id"),
+})
+
+public class Company {
+
+
+public interface CompanyDao extends JpaRepository<Company, Long> {
+	Company companyWithDepartmentsAndEmployeesAndOfficesNamedQuery(Long id);
+}
+
+==================
+
+3) EntityGraph
+4) Specification
+5) AOP
+6) RESTful 
+7) Envers
+8) Flux
+9) cacheExample
+===================================================

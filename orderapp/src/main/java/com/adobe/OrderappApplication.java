@@ -25,8 +25,16 @@ public class OrderappApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		addCustomers();
-		addProducts();
-		getProducts();
+//		addProducts();
+//		getProducts();
+		getCustomers();
+	}
+
+	private void getCustomers() {
+		List<Customer> customers = service.getCustomersByFirstName("Bh__%m%");
+		for(Customer c : customers) {
+			System.out.println(c.getFirstName());
+		}
 	}
 
 	private void getProducts() {
@@ -48,6 +56,7 @@ public class OrderappApplication implements CommandLineRunner {
 	private void addCustomers() {
 		service.addCustomer(new Customer("a@adobe.com", "Ashok"));
 		service.addCustomer(new Customer("b@adobe.com", "Bharath"));
+		service.addCustomer(new Customer("ba@adobe.com", "Bheema"));
 	}
 	
 	
