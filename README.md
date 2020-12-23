@@ -1128,6 +1128,134 @@ Reactive Programming
 Cache Redis
 ProtoBuf [ Micro Service]
 Security
+==================================================
+
+Day 3
+======
+
+PersonDTO or Person VO [ carriers of data in object way but it's not an enitity]
+
+com.adbobe.prj.dto;
+
+class ReportDTO {
+	String email;
+	Date orderDate;
+	double total;	
+}
+
+
+@Query("select new com.adbobe.prj.dto.ReportDTO(c.email,o.orderDate,o.total) from Order o inner join Customer c")
+List<ReportDTO> getReport();
+
+	instead of
+@Query("select  c.email,o.orderDate,o.total  from Order o inner join Customer c")
+List<Object[]> getReport();
+======================================================================
+
+Async Service ==> we dedicate pool of threads for execution 
+
+	Aggregator application ==> MakeMyTrip, HoildayIQ
+
+	A request from client uses 1 Thread of Tomcat/jetty or any web container ;Aprox 200 threads ]
+	Now over service will internally schedlue 3 threads to make request [ Indigo, Spice, Jet]
+	from another set of thread pool [ Executor Framework]
+
+	Without above apporach:
+		1 ==> get quote from Indigo http://indigo.com
+		then
+		2 ==> get quote from Spice 
+		then
+		3 ==> get quote Jet
+
+	we collect responses from these 3 and send it to client ==> CompletableFuture / Future
+===================================================
+
+Reactive Programming using Spring WebFLux instead of Spring MVC
+Netty instead of Tomcat
+======================================================
+ BJ: ==> 9972058787
+
+ 1) using docker-compose.yaml
+ $ docker-compose up
+
+ 2) another terminal
+ 	
+ 	docker exec -it mongo bash
+ 	
+ 	> mongo admin --username admin --password password
+
+ 	> db.createCollection("itemCapped", { capped : true, size : 5242880, max : 50 } )
+
+
+
+http://localhost:8090/stream ==> @Tailable
+http://localhost:8090/items
+========================================================================
+
+ @Bean
+    RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
+        return (builder) -> {
+            Map<String, RedisCacheConfiguration> configurationMap = new HashMap<>();
+            configurationMap.put("cache1", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofSeconds(20)));  
+            configurationMap.put("cache2", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(2)));     
+            builder.withInitialCacheConfigurations(configurationMap);
+        };
+    }
+==================================================================
+
+spring-data-redis RedisCacheManager
+===================================
+
+npm i redis-commander
+
+$ redis-commander
+connect:
+http://locahost:8081
+
+redis> keys *
+==================
+
+ProtoBuf
+
+Account ==> entity package ==> JPA @Entity
+
+	string --->
+
+	FileOutputStream f
+
+	FileWriter out
+====================================================
+
+Spring Security
+===============
+
+	Security ==> Filters provided to be exectued in servlet Web Container
+				 Filters which run within Spring Container
+
+	==============================
+	login logout ==> user and generated password
+	application.properties ==> username and password
+
+	InMemory @EnableWebSecurity
+	JDBCAuthentication ==> users and authorities
+======================================================
+	Method Level Security
+====================
+
+RESTful Web Services ==> Stateless
+
+Mobile; MicroService <==> MicroService
+
+JWT
+=============================
+	
+	PRODUCTS API INVENTORY
+	products
+		All the products
+
+	cart
+		products added into your cart
+		checkout 
 
 
 
